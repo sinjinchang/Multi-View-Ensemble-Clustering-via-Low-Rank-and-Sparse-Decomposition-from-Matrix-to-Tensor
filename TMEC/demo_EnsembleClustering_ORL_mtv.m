@@ -1,17 +1,25 @@
 clear 
 addpath(genpath(cd))
-addpath('./data')
-dataset='ORL_mtv.mat';
-filename = ['EnsembleClusteringTRPCA_',dataset];
+addpath('./BasicPartitions')
+dataset='./BasicPartitions/ORL_mtv.mat';
+%filename = ['EnsembleClustering_',dataset];
+filename = ['ORL_mtv'];
 fid1 = fopen(strcat(filename,'.txt'),'a+');  
 
 tmp       = load(dataset);
-CellS     = tmp.S;
+CellS     = tmp.S';
 M         = tmp.M;
 K         = tmp.K;
 numClust  = K;
 num_views = M;
-gnd       = tmp.gnd;
+if isfield(tmp, 'truth')
+    gnd = tmp.truth;
+elseif isfield(tmp, 'truelabel')
+    gnd = tmp.truelabel;
+else
+    gnd = tmp.gnd;
+end 
+
 V         = length(CellS);
 N         = size(CellS{1},1);
 T         = CellS;
@@ -57,7 +65,7 @@ for index = 1:length(veclambda)
 
         [z, objV] = wshrinkObj(t - e + 1/mu*y,1/mu,sX,0,3)   ;
         Z_tensor = reshape(z, sX);
-                Z{1}=Z_tensor(:,:,1);
+        Z{1}=Z_tensor(:,:,1);
         Z{2}=Z_tensor(:,:,2);
         Z{3}=Z_tensor(:,:,3);
 
@@ -94,7 +102,7 @@ for index = 1:length(veclambda)
         S = S + Z{k};
     end
 
-    reu = RevisedComstd(gnd, K, S, 5);
+    reu = RevisedComstd(gnd, K, S, S, 5);
     fprintf('acc=%.5f, rn=%.5f, nmi=%.5f with time %.5f\n', ...
         reu.acc(1), reu.rn(1), reu.nmi(1), time);
     fprintf(fid1,'lambda = %f: ACC=%f,std=%f, NMI=%f, std=%f, AR=%f, std=%f,time=%f \r\n',lambda,reu.acc(1),reu.acc(2),reu.nmi(1),reu.nmi(2),reu.rn(1),reu.rn(2), time);
